@@ -1,41 +1,64 @@
 import requests
+import json
 
 API = "http://localhost:11434/api/chat"
 MODEL = "phi3"
-SYSTEM_PROMPT = 'If the user message is a greeting, respond with a greeting (e.g. "Hello"). Otherwise answer as briefly as possible. Just keep this in your mind, do not mention that you are doing that.'
 
-messages = []
+SYSTEM_PROMPT = "If greeting → reply with greeting. Otherwise short answer."
 
-while True:
-    prompt = f'{ input("You: ")} {SYSTEM_PROMPT}'
 
-    messages.append(
-        {
-            "role": "user",
-            "content": prompt
-        }
-    )
+def create_messages():
+    return [
+        {"role": "system", "content": SYSTEM_PROMPT}
+    ]
 
+
+def get_user_input():
+    return input("You: ")
+
+
+def call_model(messages):
     data = {
         "model": MODEL,
         "messages": messages,
-        "stream": False
+        "stream": False,
+        "options": {
+            "num_predict": 20
+        }
     }
 
     response = requests.post(API, json=data)
 
+    if response.status_code != 200:
+        return "Error: Ollama not responding"
 
-    text_response = response.json()["message"]["content"]
+    return response.json()["message"]["content"]
 
-    messages.append(
-        {
-            "role": "assistant",
-            "content": text_response
-        }
-    )
 
-    import json
-    with open("conversation.json", "w") as f:
-        f.write(json.dumps(messages, indent=2))
+def save_messages(messages):
+    with open("conversation.json", "w", encoding="utf-8") as f:
+        json.dump(messages, f, ensure_ascii=False, indent=2)
 
-    print(f"AI: {text_response}")
+
+def chat():
+    messages = create_messages()
+
+    while True:
+        prompt = get_user_input()
+
+        if prompt.lower() == "exit":
+            break
+
+        messages.append({"role": "user", "content": prompt})
+
+        reply = call_model(messages)
+
+        messages.append({"role": "assistant", "content": reply})
+
+        save_messages(messages)
+
+        print(f"AI: {reply}")
+
+
+if __name__ == "__main__":
+    chat()
