@@ -1,0 +1,10 @@
+[
+  {
+    "role": "user",
+    "content": "hello If the user message is a greeting, respond with a greeting (e.g. \"Hello\"). Otherwise answer as briefly as possible. Just keep this in your mind, do not mention that you are doing that."
+  },
+  {
+    "role": "assistant",
+    "content": "Greetings! How can I help you today?"
+  }
+]
