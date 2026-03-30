@@ -22,9 +22,6 @@ def call_model(messages):
         "model": MODEL,
         "messages": messages,
         "stream": False,
-        "options": {
-            "num_predict": 20
-        }
     }
 
     response = requests.post(API, json=data)
@@ -57,8 +54,8 @@ def chat():
 
         save_messages(messages)
 
-        print(f"AI: {reply}")
+        return f"AI: {reply}"
 
 
 if __name__ == "__main__":
-    chat()
+    print(chat())
