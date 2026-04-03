@@ -1,5 +1,10 @@
 import requests
-import json
+import psycopg2
+import uuid
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 API = "http://localhost:11434/api/chat"
 MODEL = "phi3"
@@ -24,21 +29,68 @@ def call_model(messages):
         "stream": False,
     }
 
-    response = requests.post(API, json=data)
+    try:
+        response = requests.post(API, json=data, timeout=10)
 
-    if response.status_code != 200:
-        return "Error: Ollama not responding"
+        if response.status_code != 200:
+            print(f"Model HTTP error: {response.status_code}")
+            return None
 
-    return response.json()["message"]["content"]
+        json_data = response.json()
+        return json_data.get("message", {}).get("content")
+
+    except requests.exceptions.Timeout:
+        print("Model timeout")
+        return None
+
+    except requests.exceptions.ConnectionError:
+        print("Model connection error")
+        return None
+
+    except Exception as err:
+        print(f"Unexpected model error: {err}")
+        return None
 
 
-def save_messages(messages):
-    with open("conversation.json", "w", encoding="utf-8") as f:
-        json.dump(messages, f, ensure_ascii=False, indent=2)
+def get_connection():
+    return psycopg2.connect(
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+    )
+
+
+def create_conversation():
+    conversation_id = str(uuid.uuid4())
+
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO conversations (id) VALUES (%s)",
+                (conversation_id,)
+            )
+
+    return conversation_id
+
+
+def save_message(conversation_id, role, content, seq):
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO messages (conversation_id, role, content, seq)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (conversation_id, role, content, seq)
+            )
 
 
 def chat():
     messages = create_messages()
+    conversation_id = create_conversation()
+    seq = 0
 
     while True:
         prompt = get_user_input()
@@ -46,16 +98,24 @@ def chat():
         if prompt.lower() == "exit":
             break
 
+        seq += 1
+        save_message(conversation_id, "user", prompt, seq)
+
         messages.append({"role": "user", "content": prompt})
 
         reply = call_model(messages)
 
+        if reply is None:
+            print("AI: [error – brak odpowiedzi]")
+            continue
+
+        seq += 1
+        save_message(conversation_id, "assistant", reply, seq)
+
         messages.append({"role": "assistant", "content": reply})
 
-        save_messages(messages)
-
-        return f"AI: {reply}"
+        print(f"AI: {reply}")
 
 
 if __name__ == "__main__":
-    print(chat())
+    chat()
