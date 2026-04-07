@@ -3,6 +3,7 @@ import psycopg2
 import uuid
 import os
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -52,6 +53,18 @@ def call_model(messages):
         return None
 
 
+def call_model_with_retry(messages, attempts=3, base_delay=0.7):
+    for attempt in range(attempts):
+        reply = call_model(messages)
+        if reply is not None:
+            return reply
+
+        if attempt < attempts - 1:
+            time.sleep(base_delay * (2 ** attempt))
+
+    return None
+
+
 def get_connection():
     return psycopg2.connect(
         dbname=os.getenv("DB_NAME"),
@@ -87,6 +100,15 @@ def save_message(conversation_id, role, content, seq):
             )
 
 
+def trim_messages(messages, keep_last=20):
+    if not messages:
+        return messages
+    system = messages[0] if messages[0].get("role") == "system" else None
+    rest = messages[1:] if system else messages
+    trimmed = rest[-keep_last:]
+    return ([system] + trimmed) if system else trimmed
+
+
 def chat():
     messages = create_messages()
     conversation_id = create_conversation()
@@ -98,22 +120,27 @@ def chat():
         if prompt.lower() == "exit":
             break
 
+        user_msg = {"role": "user", "content": prompt}
+
         seq += 1
         save_message(conversation_id, "user", prompt, seq)
 
-        messages.append({"role": "user", "content": prompt})
-
-        reply = call_model(messages)
+        candidate_messages = messages + [user_msg]
+        reply = call_model_with_retry(
+            trim_messages(candidate_messages, keep_last=20),
+            attempts=3,
+            base_delay=0.7,
+        )
 
         if reply is None:
             print("AI: [error – brak odpowiedzi]")
             continue
+        
+        messages.append(user_msg)
 
         seq += 1
         save_message(conversation_id, "assistant", reply, seq)
-
         messages.append({"role": "assistant", "content": reply})
-
         print(f"AI: {reply}")
 
 
