@@ -11,23 +11,25 @@ This project runs a simple terminal-based chat and stores conversations in Postg
 
 ## Quick Start
 
-1. Start Ollama and download the model:
+1. Download the model and start Ollama:
 
     ```bash
     ollama pull phi3
+    ollama serve
     ```
+    
     * make sure Ollama is running at `http://localhost:11434`
 
 
-2. Copy and configure the environment file:
+1. Copy and configure the environment file:
 
    * copy `.env.example` to `.env`
    * set `DB_NAME`, `DB_USER`, `DB_PASSWORD` (you can keep the defaults)
 
-3. Run everything with a single command:
+2. Run everything with a single command:
 
    ```bash
-   docker compose run --rm --build app
+   docker compose run --rm app
 
 The application will connect to Postgres running in Docker and to Ollama on the host.
 
