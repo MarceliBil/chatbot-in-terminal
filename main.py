@@ -113,10 +113,13 @@ def chat():
     conversation_id = create_conversation()
     seq = 0
 
+    print('AI: Hello! I\'m an AI model. How can I help you today? (type "exit" to end the conversation)')
+
     while True:
         prompt = get_user_input()
 
-        if prompt.lower() == "exit":
+        if prompt.lower().strip() == "exit":
+            print("See you later!")
             break
 
         user_msg = {"role": "user", "content": prompt}
