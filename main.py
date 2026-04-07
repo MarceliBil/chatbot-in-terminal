@@ -7,11 +7,10 @@ import time
 
 load_dotenv()
 
-API = "http://localhost:11434/api/chat"
-MODEL = "phi3"
+API = os.getenv("API", "http://localhost:11434/api/chat")
+MODEL = os.getenv("MODEL", "phi3")
 
-SYSTEM_PROMPT = "If greeting → reply with greeting. Otherwise short answer."
-
+SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT", "If greeting → reply with greeting. Otherwise short answer.")
 
 def create_messages():
     return [
