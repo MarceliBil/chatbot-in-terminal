@@ -24,7 +24,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: postgres
       DB_PORT: 5432
-      API: ${API:-http://host.docker.internal:11434/api/chat}
+      API: http://host.docker.internal:11434/api/chat
       MODEL: ${MODEL:-phi3}
       SYSTEM_PROMPT: ${SYSTEM_PROMPT:-If greeting → reply with greeting. Otherwise short answer.}
     depends_on:
