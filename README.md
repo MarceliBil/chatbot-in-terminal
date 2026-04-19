@@ -42,8 +42,10 @@ In `docker-compose.yml`, the Postgres port is exposed to the host, so you can co
 
 Tables are created automatically from the `tables.sql` file on first startup (when the Postgres volume is empty).
 
-### Note
+### Notes
 
-Inside the Docker container, `API` points to `http://host.docker.internal:11434/api/chat`.  
+- Inside the Docker container, `API` points to `http://host.docker.internal:11434/api/chat`.  
 This special address lets the container access Ollama running on your host machine (Windows/WSL2).  
 Using `localhost` inside the container would point to the container itself, not the host.
+- Currently, the database serves only as a backlog for storing conversations. It is not yet used for loading past messages into the chat. Features like conversation continuation may be added in the future.
+- The current Docker setup is supported only on Windows (including WSL2) and macOS. Linux support is not yet configured.
